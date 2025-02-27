@@ -80,6 +80,7 @@ project/
 - `POST /api/products` - добавление одного или нескольких товаров
 - `PUT /api/products/:id` - обновление товара по ID
 - `DELETE /api/products/:id` - удаление товара по ID
+- `GET /api-docs` - Swagger UI документация API
 
 ### Клиентский сервер (порт 3000)
 
