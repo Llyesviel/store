@@ -4,6 +4,27 @@
     <meta charset="UTF-8">
     <title>Магазин</title>
     <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .categories-filter {
+            margin-bottom: 20px;
+        }
+        .category-btn {
+            padding: 8px 16px;
+            margin: 0 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: white;
+        }
+        .category-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
         .products-container {
             display: flex;
             flex-wrap: wrap;
@@ -30,28 +51,82 @@
     </style>
 </head>
 <body>
-    <div class="products-container" id="products"></div>
+    <div class="container">
+        <div class="categories-filter" id="categories">
+            <button class="category-btn active" data-category="" onclick="filterByCategory('')">Все товары</button>
+        </div>
+        <div class="products-container" id="products"></div>
+    </div>
+
     <script>
-        fetch('http://localhost:3000/api/products')
-            .then(response => response.json())
-            .then(data => {
-                const productsContainer = document.getElementById('products');
-                data.products.forEach(product => {
-                    const card = document.createElement('div');
-                    card.className = 'product-card';
-                    card.innerHTML = `
-                        <h3>${product.name}</h3>
-                        <p>Цена: ${product.price} ₽</p>
-                        <p>${product.description}</p>
-                        <div class="categories">
-                            ${product.categories.map(cat => 
-                                `<span class="category">${cat}</span>`
-                            ).join('')}
-                        </div>
-                    `;
-                    productsContainer.appendChild(card);
-                });
+        let activeCategory = '';
+
+        // Загрузка категорий
+        async function loadCategories() {
+            const response = await fetch('http://localhost:3000/api/categories');
+            const categories = await response.json();
+            const categoriesContainer = document.getElementById('categories');
+            
+            categories.forEach(category => {
+                const button = document.createElement('button');
+                button.className = 'category-btn';
+                button.textContent = category;
+                button.dataset.category = category;
+                button.addEventListener('click', () => filterByCategory(category));
+                categoriesContainer.appendChild(button);
             });
+        }
+
+        // Фильтрация по категории
+        async function filterByCategory(category) {
+            activeCategory = category;
+            
+            // Обновление активной кнопки
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.category === (category || ''));
+            });
+
+            // Загрузка товаров
+            const url = 'http://localhost:3000/api/products' + 
+                (category ? `?category=${encodeURIComponent(category)}` : '');
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            displayProducts(data.products);
+        }
+
+        // Отображение товаров
+        function displayProducts(products) {
+            const productsContainer = document.getElementById('products');
+            productsContainer.innerHTML = '';
+
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <h3>${product.name}</h3>
+                    <p>Цена: ${product.price} ₽</p>
+                    <p>${product.description}</p>
+                    <div class="categories">
+                        ${product.categories.map(cat => 
+                            `<span class="category">${cat}</span>`
+                        ).join('')}
+                    </div>
+                `;
+                productsContainer.appendChild(card);
+            });
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Добавляем обработчик для кнопки "Все товары"
+            document.querySelector('.category-btn[data-category=""]')
+                .addEventListener('click', () => filterByCategory(''));
+            
+            await loadCategories();
+            // Явно вызываем фильтрацию без категории для отображения всех товаров
+            filterByCategory('');
+        });
     </script>
 </body>
 </html> 
