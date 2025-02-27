@@ -1,0 +1,110 @@
+openapi: 3.0.0
+info:
+  title: Admin Panel API
+  version: 1.0.0
+  description: API для панели администратора интернет-магазина
+
+paths:
+  /api/products:
+    get:
+      summary: Получение списка всех товаров
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+    
+    post:
+      summary: Добавление одного или нескольких товаров
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ProductInput'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/ProductInput'
+      responses:
+        '200':
+          description: Товары успешно добавлены
+
+  /api/products/{id}:
+    put:
+      summary: Редактирование товара по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '200':
+          description: Товар успешно обновлен
+        '404':
+          description: Товар не найден
+
+    delete:
+      summary: Удаление товара по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Товар успешно удален
+        '404':
+          description: Товар не найден
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
+        description:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+
+    ProductInput:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        description:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+      required:
+        - name
+        - price
+        - description
+        - categories 

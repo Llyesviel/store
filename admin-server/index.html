@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель администратора</title>
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .product-form {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .products-list {
+            display: grid;
+            gap: 20px;
+        }
+        .product-item {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Панель администратора</h1>
+        
+        <div class="product-form">
+            <h2>Добавить новый товар</h2>
+            <form id="addProductForm">
+                <div class="form-group">
+                    <label>Название:</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Цена:</label>
+                    <input type="number" name="price" required>
+                </div>
+                <div class="form-group">
+                    <label>Описание:</label>
+                    <textarea name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Категории (через запятую):</label>
+                    <input type="text" name="categories" required>
+                </div>
+                <button type="submit" class="button">Добавить товар</button>
+            </form>
+        </div>
+
+        <div class="products-list" id="productsList"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api';
+
+        // Загрузка товаров
+        async function loadProducts() {
+            const response = await fetch(`${API_URL}/products`);
+            const data = await response.json();
+            const productsContainer = document.getElementById('productsList');
+            productsContainer.innerHTML = '';
+
+            data.products.forEach(product => {
+                const productElement = document.createElement('div');
+                productElement.className = 'product-item';
+                productElement.innerHTML = `
+                    <h3>${product.name}</h3>
+                    <p>Цена: ${product.price} ₽</p>
+                    <p>${product.description}</p>
+                    <p>Категории: ${product.categories.join(', ')}</p>
+                    <button class="button" onclick="deleteProduct(${product.id})">Удалить</button>
+                    <button class="button" onclick="showEditForm(${JSON.stringify(product).replace(/"/g, '&quot;')})">Редактировать</button>
+                `;
+                productsContainer.appendChild(productElement);
+            });
+        }
+
+        // Добавление товара
+        document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const productData = {
+                name: formData.get('name'),
+                price: Number(formData.get('price')),
+                description: formData.get('description'),
+                categories: formData.get('categories').split(',').map(cat => cat.trim())
+            };
+
+            await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(productData)
+            });
+
+            e.target.reset();
+            loadProducts();
+        });
+
+        // Удаление товара
+        async function deleteProduct(id) {
+            if (confirm('Вы уверены, что хотите удалить этот товар?')) {
+                await fetch(`${API_URL}/products/${id}`, {
+                    method: 'DELETE'
+                });
+                loadProducts();
+            }
+        }
+
+        // Редактирование товара
+        function showEditForm(product) {
+            const formHtml = `
+                <div class="form-group">
+                    <label>Название:</label>
+                    <input type="text" name="name" value="${product.name}" required>
+                </div>
+                <div class="form-group">
+                    <label>Цена:</label>
+                    <input type="number" name="price" value="${product.price}" required>
+                </div>
+                <div class="form-group">
+                    <label>Описание:</label>
+                    <textarea name="description" required>${product.description}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Категории (через запятую):</label>
+                    <input type="text" name="categories" value="${product.categories.join(', ')}" required>
+                </div>
+                <button type="submit" class="button">Сохранить изменения</button>
+            `;
+
+            const productElement = event.target.parentElement;
+            const form = document.createElement('form');
+            form.innerHTML = formHtml;
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const updatedData = {
+                    name: formData.get('name'),
+                    price: Number(formData.get('price')),
+                    description: formData.get('description'),
+                    categories: formData.get('categories').split(',').map(cat => cat.trim())
+                };
+
+                await fetch(`${API_URL}/products/${product.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedData)
+                });
+
+                loadProducts();
+            });
+
+            productElement.innerHTML = '';
+            productElement.appendChild(form);
+        }
+
+        // Загрузка товаров при запуске
+        loadProducts();
+    </script>
+</body>
+</html> 

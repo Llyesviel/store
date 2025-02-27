@@ -1,0 +1,3 @@
+[submodule "store1"]
+	path = store1
+	url = https://github.com/Llyesviel/store.git
