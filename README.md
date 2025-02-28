@@ -14,8 +14,8 @@
 1. Склонируйте репозиторий:
 
 ```bash
-git clone https://github.com/yourusername/shop-project.git
-cd shop-project
+git clone https://github.com/Llyesviel/store.git
+cd store
 ```
 
 2. Установите зависимости:
