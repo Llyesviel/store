@@ -48,6 +48,33 @@
             border-radius: 4px;
             font-size: 12px;
         }
+        .chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            height: 400px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .chat-input {
+            padding: 10px;
+            border-top: 1px solid #ccc;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 4px;
+            background: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -58,10 +85,18 @@
         <div class="products-container" id="products"></div>
     </div>
 
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Введите сообщение...">
+            <button onclick="sendMessage()">Отправить</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/graphql-request/dist/graphql-request.umd.js"></script>
     <script>
         let activeCategory = '';
 
-        // Загрузка категорий
         async function loadCategories() {
             const response = await fetch('http://localhost:3000/api/categories');
             const categories = await response.json();
@@ -77,16 +112,13 @@
             });
         }
 
-        // Фильтрация по категории
         async function filterByCategory(category) {
             activeCategory = category;
             
-            // Обновление активной кнопки
             document.querySelectorAll('.category-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.category === (category || ''));
             });
 
-            // Загрузка товаров
             const url = 'http://localhost:3000/api/products' + 
                 (category ? `?category=${encodeURIComponent(category)}` : '');
             
@@ -95,7 +127,6 @@
             displayProducts(data.products);
         }
 
-        // Отображение товаров
         function displayProducts(products) {
             const productsContainer = document.getElementById('products');
             productsContainer.innerHTML = '';
@@ -106,27 +137,68 @@
                 card.innerHTML = `
                     <h3>${product.name}</h3>
                     <p>Цена: ${product.price} ₽</p>
-                    <p>${product.description}</p>
-                    <div class="categories">
-                        ${product.categories.map(cat => 
-                            `<span class="category">${cat}</span>`
-                        ).join('')}
-                    </div>
                 `;
                 productsContainer.appendChild(card);
             });
         }
 
-        // Инициализация
         document.addEventListener('DOMContentLoaded', async () => {
-            // Добавляем обработчик для кнопки "Все товары"
             document.querySelector('.category-btn[data-category=""]')
                 .addEventListener('click', () => filterByCategory(''));
             
             await loadCategories();
-            // Явно вызываем фильтрацию без категории для отображения всех товаров
             filterByCategory('');
         });
+
+        const ws = new WebSocket('ws://localhost:4000?type=customer');
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            messageElement.textContent = `${data.clientType}: ${data.content}`;
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        };
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (message) {
+                ws.send(JSON.stringify({ content: message }));
+                input.value = '';
+            }
+        }
+
+        async function loadProducts() {
+            const query = `
+                query GetProducts($category: String) {
+                    productPrices(category: $category) {
+                        id
+                        name
+                        price
+                    }
+                }
+            `;
+
+            const { request } = graphqlRequest;
+            try {
+                const response = await request('http://localhost:3000/graphql', query, {
+                    category: activeCategory || null
+                });
+
+                displayProducts(response.productPrices);
+            } catch (error) {
+                console.error("GraphQL error:", error);
+                const url = 'http://localhost:3000/api/products' + 
+                    (activeCategory ? `?category=${encodeURIComponent(activeCategory)}` : '');
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                displayProducts(data.products);
+            }
+        }
     </script>
 </body>
 </html> 

@@ -5,12 +5,19 @@
   "main": "index.js",
   "scripts": {
     "start-admin": "node admin-server/server.js",
-    "start-client": "node client-server/server.js"
+    "start-client": "node client-server/server.js",
+    "start-chat": "node chat-server/server.js",
+    "start": "concurrently \"npm run start-admin\" \"npm run start-client\" \"npm run start-chat\"",
+    "install-deps": "npm install"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "swagger-ui-express": "^5.0.0",
-    "yamljs": "^0.3.0"
+    "yamljs": "^0.3.0",
+    "apollo-server-express": "^3.12.1",
+    "graphql": "^16.8.1",
+    "ws": "^8.14.2",
+    "concurrently": "^8.2.2"
   }
 } 
